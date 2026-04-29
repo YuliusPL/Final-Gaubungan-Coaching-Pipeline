@@ -187,6 +187,15 @@
     padding: 14px 14px 8px;
   }
 
+  .dashboard-grid,
+  .pipeline-grid,
+  .coaching-grid,
+  .admin-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
   .card-mewah {
     border: 1px solid rgba(255,255,255,0.74);
     border-radius: var(--radius-lg);
@@ -197,12 +206,23 @@
     box-shadow: var(--shadow-card);
   }
 
+  .card-mewah.flush {
+    padding: 0;
+    overflow: hidden;
+  }
+
   .hero-stat {
     color: #fff;
     background:
       radial-gradient(circle at 18% 0%, rgba(255,255,255,0.22), transparent 26%),
       linear-gradient(145deg, #143866 0%, #0f63b5 100%);
     box-shadow: 0 18px 34px rgba(15, 61, 117, 0.20);
+  }
+
+  #v-pipe .hero-stat {
+    background:
+      radial-gradient(circle at 18% 0%, rgba(255,255,255,0.20), transparent 26%),
+      linear-gradient(145deg, #0b6f78 0%, #16a8a2 100%);
   }
 
   .section-chip {
@@ -219,6 +239,8 @@
   .chip-home { color: var(--primary); background: rgba(23, 100, 183, 0.11); }
   .chip-pipe { color: var(--app-blue); background: rgba(15, 140, 149, 0.12); }
   .chip-coaching { color: var(--coaching-main); background: rgba(122, 79, 243, 0.12); }
+  .chip-admin { color: var(--admin-main); background: rgba(222, 122, 22, 0.13); }
+  .pipe-chip { color: var(--app-blue); background: rgba(15, 140, 149, 0.12); }
   .admin-chip { color: var(--admin-main); background: rgba(222, 122, 22, 0.13); }
 
   .section-hero {
@@ -250,6 +272,18 @@
     color: var(--text-soft);
     font-size: 12px;
     line-height: 1.5;
+  }
+
+  .home-hero {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(23, 100, 183, 0.16), transparent 30%),
+      rgba(255,255,255,0.78);
+  }
+
+  .pipe-hero {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(15, 140, 149, 0.18), transparent 30%),
+      rgba(255,255,255,0.78);
   }
 
   .section-hero-coaching {
@@ -414,35 +448,6 @@
     font-size: 18px;
   }
 
-  .role-grid,
-  .kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .role-card {
-    position: relative;
-    overflow: hidden;
-    height: 100%;
-    padding: 16px;
-    border: 1px solid transparent;
-  }
-
-  .role-cs {
-    border-color: rgba(27, 99, 191, 0.22);
-    background:
-      radial-gradient(circle at 100% 0%, rgba(27, 99, 191, 0.12), transparent 34%),
-      rgba(255,255,255,0.88);
-  }
-
-  .role-spv {
-    border-color: rgba(15, 140, 149, 0.24);
-    background:
-      radial-gradient(circle at 100% 0%, rgba(15, 140, 149, 0.14), transparent 34%),
-      rgba(255,255,255,0.88);
-  }
-
   .role-head {
     display: flex;
     align-items: center;
@@ -454,52 +459,34 @@
     font-weight: 800;
   }
 
-  .jab-pct {
-    display: block;
-    margin-bottom: 10px;
-    padding: 8px 4px;
-    border-radius: 14px;
+  .role-head i {
+    width: 30px;
+    height: 30px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: #fff;
-    font-size: 19px !important;
-    font-weight: 800;
-    text-align: center;
-    box-shadow: inset 0 -6px 14px rgba(255,255,255,0.08);
+    background: linear-gradient(135deg, var(--primary-2), var(--primary));
   }
 
-  #cs-p { background: linear-gradient(135deg, #1b63bf, #0f3d75); }
-  #spv-p { background: linear-gradient(135deg, #2db0c2, #0f8c95); }
+  .role-spv .role-head i {
+    background: linear-gradient(135deg, #24b5b3, #0f8c95);
+  }
 
   .jab-detail {
-    padding-top: 8px;
-    border-top: 1px dashed rgba(16,35,60,0.12);
-    color: var(--text-soft);
-    font-size: 10px;
-    line-height: 1.5;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 
-  .cair-row {
-    border-left: 5px solid var(--primary-2);
-    border-radius: 18px;
-    margin-bottom: 10px;
-    padding: 14px 15px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    background: rgba(255,255,255,0.80);
-    box-shadow: 0 6px 18px rgba(15, 35, 60, 0.04);
+  .jab-detail b {
+    color: var(--text-main);
+    font-size: 11px;
   }
 
-  .total-row {
-    border-left: 6px solid #8fd4ff !important;
-    color: #fff !important;
-    background: linear-gradient(135deg, #0e325f, #1a5ea9) !important;
-    box-shadow: 0 14px 26px rgba(12, 53, 100, 0.18);
-  }
-
-  .total-val-gagah {
-    font-size: 20px !important;
-    font-weight: 800;
+  .cair-list {
+    margin-top: 14px;
   }
 
   .metric-card {
@@ -572,74 +559,8 @@
     min-height: 120px;
   }
 
-  .funnel-box {
-    border-radius: 16px;
-    margin-bottom: 10px;
-    padding: 14px 16px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: white;
-    font-size: 13px;
-    font-weight: 800;
-    box-shadow: 0 8px 18px rgba(15, 35, 60, 0.08);
-  }
-
-  .funnel-value {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .funnel-value b {
-    min-width: 30px;
-    text-align: right;
-  }
-
-  .funnel-pct {
-    min-width: 54px;
-    border-radius: 999px;
-    padding: 4px 8px;
-    background: rgba(255,255,255,0.20);
-    font-size: 10px;
-    text-align: center;
-  }
-
-  .st-apk { background: linear-gradient(135deg, #0f3d75, #1f5faf) !important; }
-  .st-app { background: linear-gradient(135deg, #0f8c95, #1fb8bf) !important; }
-  .st-cair { background: linear-gradient(135deg, #1c8d54, #2cb36f) !important; }
-  .st-rej { background: linear-gradient(135deg, #c63e52, #dc3545) !important; }
-  .st-bel { background: linear-gradient(135deg, #ffc658, #ffb020) !important; color: #3b2a00 !important; }
-  .st-pen { background: linear-gradient(135deg, #ff9d4d, #fd7e14) !important; }
-
-  .rank-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 11px 12px;
-    border-bottom: 1px solid rgba(15, 35, 60, 0.06);
-    font-size: 11px;
-  }
-
-  .bottom-alert {
-    margin: 6px;
-    border-radius: 12px;
-    color: #8d1b2e !important;
-    background: linear-gradient(135deg, #ffe3e7, #ffd5db) !important;
-    font-weight: 800;
-  }
-
-  .badge-status {
-    min-width: 82px;
-    border-radius: 999px;
-    padding: 5px 10px;
-    display: inline-block;
-    color: white !important;
-    font-size: 8px;
-    font-weight: 800;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
+  #v-pipe {
+    min-height: 60vh;
   }
 
   .table-toolbar,
@@ -699,24 +620,13 @@
     white-space: nowrap;
   }
 
-  .data-table thead th[onclick],
-  .sortable-th {
+  .data-table thead th[onclick] {
     cursor: pointer;
     user-select: none;
   }
 
-  .data-table thead th[onclick]:hover,
-  .sortable-th:hover {
+  .data-table thead th[onclick]:hover {
     background: #163a62;
-  }
-
-  .sort-indicator {
-    display: inline-block;
-    min-width: 14px;
-    margin-left: 4px;
-    color: rgba(255,255,255,0.85);
-    font-size: 10px;
-    font-weight: 800;
   }
 
   .data-table td {
@@ -731,6 +641,12 @@
     gap: 14px;
   }
 
+  .coaching-form-card {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(122, 79, 243, 0.12), transparent 28%),
+      rgba(255,255,255,0.86);
+  }
+
   .form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -738,8 +654,266 @@
     margin-top: 16px;
   }
 
+  .form-group {
+    min-width: 0;
+  }
+
   .span-2 {
     grid-column: span 2;
+  }
+
+  .coaching-table-scroll {
+    max-height: 560px;
+  }
+
+  .coaching-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .coaching-filter-label {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 8px 12px;
+    background: rgba(122, 79, 243, 0.10);
+    color: var(--coaching-main);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .coaching-status-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .coaching-region-card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .coaching-region-card {
+    border: 1px solid rgba(122, 79, 243, 0.18);
+    border-radius: 18px;
+    padding: 14px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(122,79,243,0.10), transparent 45%),
+      rgba(255,255,255,0.90);
+    cursor: pointer;
+    transition: all 0.18s ease;
+    box-shadow: 0 8px 18px rgba(15, 35, 60, 0.06);
+  }
+
+  .coaching-region-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-card);
+  }
+
+  .coaching-region-card strong {
+    display: block;
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-main);
+    line-height: 1.1;
+  }
+
+  .coaching-region-card span {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-main);
+    text-transform: uppercase;
+  }
+
+  .coaching-region-card small {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-soft);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .coaching-region-card.active {
+    border-color: rgba(122, 79, 243, 0.46);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(122,79,243,0.18), transparent 45%),
+      rgba(255,255,255,0.96);
+    box-shadow: 0 12px 24px rgba(122, 79, 243, 0.18);
+  }
+
+  .coaching-status-card {
+    position: relative;
+    overflow: hidden;
+    border-left: 5px solid rgba(15, 35, 60, 0.22);
+    cursor: pointer;
+    min-height: 104px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  }
+
+  .coaching-status-card:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-soft);
+  }
+
+  .coaching-status-card h3 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+  }
+
+  .coaching-status-card span {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-soft);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .coaching-status-card small {
+    display: block;
+    margin-top: 8px;
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .coaching-status-card.st-belum { border-left-color: #94a3b8; background: linear-gradient(135deg, rgba(148,163,184,0.10), rgba(255,255,255,0.92)); }
+  .coaching-status-card.st-need { border-left-color: #f59e0b; background: linear-gradient(135deg, rgba(245,158,11,0.10), rgba(255,255,255,0.92)); }
+  .coaching-status-card.st-progress { border-left-color: #3b82f6; background: linear-gradient(135deg, rgba(59,130,246,0.10), rgba(255,255,255,0.92)); }
+  .coaching-status-card.st-overdue { border-left-color: #ef4444; background: linear-gradient(135deg, rgba(239,68,68,0.10), rgba(255,255,255,0.92)); }
+  .coaching-status-card.st-done { border-left-color: #10b981; background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(255,255,255,0.92)); }
+  .coaching-status-card.st-total { border-left-color: #0f3d75; background: linear-gradient(135deg, #173f73, #2c5d99); color: #fff; }
+  .coaching-status-card.st-total span,
+  .coaching-status-card.st-total small { color: rgba(255,255,255,0.82); }
+
+  .hierarchy-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .hierarchy-list {
+    max-height: 360px;
+    overflow: auto;
+  }
+
+  .hierarchy-item {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid rgba(15, 35, 60, 0.06);
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: transparent;
+    color: var(--text-main);
+    text-align: left;
+  }
+
+  .hierarchy-item:hover {
+    background: rgba(122, 79, 243, 0.06);
+  }
+
+  .hierarchy-item.active {
+    background: rgba(122, 79, 243, 0.12);
+  }
+
+  .hierarchy-item-static {
+    cursor: pointer;
+  }
+
+  .hierarchy-item-static:hover {
+    background: rgba(122, 79, 243, 0.06);
+  }
+
+  .coaching-list-box {
+    max-height: 460px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .coaching-list-box::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .coaching-list-box::-webkit-scrollbar-thumb {
+    border-radius: 999px;
+    background: rgba(108, 125, 146, 0.45);
+  }
+
+  .coaching-monitor-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .hierarchy-item strong {
+    display: block;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .hierarchy-item small {
+    display: block;
+    margin-top: 3px;
+    color: var(--text-soft);
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .hierarchy-count {
+    min-width: 34px;
+    border-radius: 999px;
+    padding: 6px 9px;
+    background: rgba(122, 79, 243, 0.12);
+    color: var(--coaching-main);
+    font-size: 11px;
+    font-weight: 800;
+    text-align: center;
+  }
+
+  .coaching-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    padding: 5px 9px;
+    min-width: 96px;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .badge-belum-coaching { background: #64748b; }
+  .badge-need-fu { background: #f59e0b; color: #3b2600; }
+  .badge-on-progress { background: #3b82f6; }
+  .badge-over-due { background: #ef4444; }
+  .badge-done { background: #10b981; }
+
+  .coaching-detail-table tbody tr.row-active {
+    background: rgba(122, 79, 243, 0.14) !important;
+  }
+
+  .coaching-detail-table tbody tr.row-active td {
+    border-color: rgba(122, 79, 243, 0.22);
+  }
+
+  .form-control.is-invalid,
+  textarea.form-control.is-invalid {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.12) !important;
   }
 
   .form-label-lite,
@@ -768,14 +942,23 @@
     min-height: 92px;
   }
 
-  .btn-admin-main,
-  .btn-coaching {
+  .form-control:focus,
+  .form-select:focus,
+  textarea.form-control:focus {
+    border-color: rgba(15, 61, 117, 0.32) !important;
+    box-shadow: 0 0 0 4px rgba(15, 61, 117, 0.08) !important;
+  }
+
+  .btn-main,
+  .btn-admin-main {
     border: none;
     border-radius: 18px;
     padding: 13px 16px;
     color: #fff;
     font-size: 12px;
     font-weight: 800;
+    background: linear-gradient(135deg, #2b77d0, #0f4d99);
+    box-shadow: 0 12px 24px rgba(15, 61, 117, 0.18);
   }
 
   .btn-coaching {
@@ -788,180 +971,277 @@
     box-shadow: 0 12px 24px rgba(222, 122, 22, 0.18);
   }
 
-  .coaching-filter-bar {
-    display: flex;
-    gap: 12px;
-    align-items: stretch;
-    margin-bottom: 14px;
-  }
-
-  .active-scope-card {
-    flex: 1;
-    border-radius: 22px;
-    padding: 14px 16px;
-    background: rgba(255,255,255,0.86);
-    border: 1px solid rgba(122,79,243,0.14);
-    box-shadow: var(--shadow-card);
-  }
-
-  .active-scope-card b {
-    display: block;
-    font-size: 16px;
-    margin-top: 4px;
-  }
-
-  .active-scope-card small {
-    display: block;
-    margin-top: 4px;
-    color: var(--text-soft);
-    font-size: 11px;
-  }
-
-  .btn-coaching-reset {
-    border: none;
-    border-radius: 18px;
-    padding: 0 16px;
-    color: #fff;
-    background: linear-gradient(135deg, #9668ff, #7a4ff3);
-    font-size: 12px;
-    font-weight: 800;
-    box-shadow: 0 12px 24px rgba(122,79,243,0.18);
-  }
-
-  .coaching-status-grid {
+  .kpi-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
-    margin-bottom: 14px;
   }
 
-  .coaching-status-card {
-    min-height: 112px;
-    border-radius: 18px;
-    padding: 14px 16px;
-    border-left: 5px solid #94a3b8;
-    background: rgba(255,255,255,0.88);
-    box-shadow: var(--shadow-card);
-    cursor: pointer;
-    transition: transform 0.18s ease, box-shadow 0.18s ease;
+  .role-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
   }
 
-  .coaching-status-card:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-soft);
+  .role-card {
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+    padding: 16px;
+    border: 1px solid transparent;
   }
 
-  .coaching-status-card strong {
-    display: block;
-    font-size: 28px;
-    line-height: 1;
+  .role-card::after {
+    content: "";
+    position: absolute;
+    width: 92px;
+    height: 92px;
+    right: -34px;
+    bottom: -34px;
+    border-radius: 999px;
+    opacity: 0.12;
+  }
+
+  .role-cs {
+    border-color: rgba(27, 99, 191, 0.22);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(27, 99, 191, 0.12), transparent 34%),
+      rgba(255,255,255,0.88);
+  }
+
+  .role-cs::after {
+    background: #1b63bf;
+  }
+
+  .role-spv {
+    border-color: rgba(15, 140, 149, 0.24);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(15, 140, 149, 0.14), transparent 34%),
+      rgba(255,255,255,0.88);
+  }
+
+  .role-spv::after {
+    background: #0f8c95;
+  }
+
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    padding: 6px 10px;
+    margin-bottom: 10px;
+    font-size: 10px;
     font-weight: 800;
+    white-space: nowrap;
+    background: rgba(15, 61, 117, 0.08);
+    color: var(--primary);
   }
 
-  .coaching-status-card span {
+  .jab-pct {
     display: block;
-    margin-top: 8px;
+    margin-bottom: 10px;
+    padding: 8px 4px;
+    border-radius: 14px;
+    color: #fff;
+    font-size: 19px !important;
+    font-weight: 800;
+    text-align: center;
+    box-shadow: inset 0 -6px 14px rgba(255,255,255,0.08);
+  }
+
+  #cs-p { background: linear-gradient(135deg, #1b63bf, #0f3d75); }
+  #spv-p { background: linear-gradient(135deg, #2db0c2, #0f8c95); }
+
+  .jab-detail {
+    padding-top: 8px;
+    border-top: 1px dashed rgba(16,35,60,0.12);
     color: var(--text-soft);
-    font-size: 11px;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .cair-row {
+    border-left: 5px solid var(--primary-2);
+    border-radius: 18px;
+    margin-bottom: 10px;
+    padding: 14px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.80);
+    box-shadow: 0 6px 18px rgba(15, 35, 60, 0.04);
+  }
+
+  .total-row {
+    border-left: 6px solid #8fd4ff !important;
+    color: #fff !important;
+    background: linear-gradient(135deg, #0e325f, #1a5ea9) !important;
+    box-shadow: 0 14px 26px rgba(12, 53, 100, 0.18);
+  }
+
+  .total-val-gagah {
+    font-size: 20px !important;
     font-weight: 800;
+  }
+
+  .p-title {
+    color: #8b98aa;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.03em;
     text-transform: uppercase;
   }
 
-  .coaching-status-card small {
-    display: block;
-    margin-top: 8px;
+  .p-val {
     color: var(--text-main);
-    font-size: 13px;
+    font-size: 18px !important;
     font-weight: 800;
   }
 
-  .coaching-status-card.st-belum { border-left-color: #94a3b8; background: linear-gradient(135deg, rgba(148,163,184,0.12), rgba(255,255,255,0.94)); }
-  .coaching-status-card.st-need { border-left-color: #f59e0b; background: linear-gradient(135deg, rgba(245,158,11,0.12), rgba(255,255,255,0.94)); }
-  .coaching-status-card.st-progress { border-left-color: #3b82f6; background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(255,255,255,0.94)); }
-  .coaching-status-card.st-overdue { border-left-color: #ef4444; background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(255,255,255,0.94)); }
-  .coaching-status-card.st-done { border-left-color: #10b981; background: linear-gradient(135deg, rgba(16,185,129,0.12), rgba(255,255,255,0.94)); }
-  .coaching-status-card.st-total { border-left-color: #0f3d75; background: linear-gradient(135deg, #173f73, #2c5d99); color: #fff; }
-  .coaching-status-card.st-total span,
-  .coaching-status-card.st-total small { color: rgba(255,255,255,0.82); }
-
-  .coaching-monitor-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    margin-bottom: 14px;
-  }
-
-  .coaching-list-box {
-    max-height: 360px;
-    overflow: auto;
-  }
-
-  .hierarchy-item {
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid rgba(15,35,60,0.06);
-    padding: 12px;
+  .card-content-fix {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
-    background: transparent;
-    color: var(--text-main);
-    text-align: left;
+    gap: 12px;
+    width: 100%;
   }
 
-  .hierarchy-item:hover {
-    background: rgba(122,79,243,0.06);
-  }
-
-  .hierarchy-item strong {
-    display: block;
-    font-size: 12px;
+  .funnel-box {
+    border-radius: 16px;
+    margin-bottom: 10px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    font-size: 13px;
     font-weight: 800;
+    box-shadow: 0 8px 18px rgba(15, 35, 60, 0.08);
   }
 
-  .hierarchy-item small {
-    display: block;
-    margin-top: 3px;
-    color: var(--text-soft);
-    font-size: 10px;
-    font-weight: 700;
+  .funnel-value {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
   }
 
-  .hierarchy-count {
-    min-width: 34px;
+  .funnel-value b {
+    min-width: 30px;
+    text-align: right;
+  }
+
+  .funnel-value small,
+  .funnel-pct {
+    min-width: 54px;
     border-radius: 999px;
-    padding: 6px 9px;
-    background: rgba(122,79,243,0.12);
-    color: var(--coaching-main);
-    font-size: 11px;
-    font-weight: 800;
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.20);
+    font-size: 10px;
     text-align: center;
   }
 
-  .coaching-detail-scroll {
-    max-height: 520px;
+  .st-apk { background: linear-gradient(135deg, #0f3d75, #1f5faf) !important; }
+  .st-app { background: linear-gradient(135deg, #0f8c95, #1fb8bf) !important; }
+  .st-cair { background: linear-gradient(135deg, #1c8d54, #2cb36f) !important; }
+  .st-rej { background: linear-gradient(135deg, #c63e52, #dc3545) !important; }
+  .st-bel { background: linear-gradient(135deg, #ffc658, #ffb020) !important; color: #3b2a00 !important; }
+  .st-pen { background: linear-gradient(135deg, #ff9d4d, #fd7e14) !important; }
+
+  .rank-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(15, 35, 60, 0.06);
+    font-size: 11px;
   }
 
-  .coaching-status-badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .bottom-alert {
+    margin: 6px;
+    border-radius: 12px;
+    color: #8d1b2e !important;
+    background: linear-gradient(135deg, #ffe3e7, #ffd5db) !important;
+    font-weight: 800;
+  }
+
+  .badge-status {
+    min-width: 82px;
     border-radius: 999px;
-    padding: 5px 9px;
-    min-width: 106px;
-    color: #fff;
-    font-size: 9px;
+    padding: 5px 10px;
+    display: inline-block;
+    color: white !important;
+    font-size: 8px;
     font-weight: 800;
     text-align: center;
     text-transform: uppercase;
+    letter-spacing: 0.03em;
   }
 
-  .badge-belum-coaching { background: #64748b; }
-  .badge-need-fu { background: #f59e0b; color: #3b2600; }
-  .badge-on-progress { background: #3b82f6; }
-  .badge-over-due { background: #ef4444; }
-  .badge-done { background: #10b981; }
+  .table-area {
+    max-height: 460px;
+    overflow: auto;
+  }
+
+  .table-modern {
+    width: 100%;
+    margin-bottom: 0;
+    font-size: 10px;
+  }
+
+  .table-modern th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 12px 10px;
+    border: none;
+    color: #fff;
+    background: #0f2746;
+    white-space: nowrap;
+  }
+
+  .table-modern td {
+    padding: 11px 10px;
+    border-color: rgba(15, 35, 60, 0.06);
+    vertical-align: middle;
+  }
+
+  .table-interaktif {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 10px;
+  }
+
+  .table-interaktif th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 12px 9px;
+    color: white;
+    background: linear-gradient(135deg, #7a4ff3, #8f67ff);
+    cursor: pointer;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .table-interaktif td {
+    padding: 11px 9px;
+    border-bottom: 1px solid rgba(15, 35, 60, 0.06);
+    vertical-align: middle;
+  }
+
+  .table-interaktif tr:hover {
+    background: rgba(122, 79, 243, 0.06);
+    cursor: pointer;
+  }
+
+  .empty-state {
+    color: var(--text-soft);
+    text-align: center;
+    padding: 24px 12px;
+    font-size: 12px;
+  }
 
   .nav-fix {
     position: fixed;
@@ -977,7 +1257,7 @@
     border-radius: 24px;
     background: rgba(255,255,255,0.90);
     backdrop-filter: blur(18px);
-    box-shadow: 0 18px 36px rgba(15,35,60,0.14);
+    box-shadow: 0 18px 36px rgba(15, 35, 60, 0.14);
   }
 
   .nav-item {
@@ -990,13 +1270,15 @@
     gap: 6px;
     color: #8e9bad;
     background: transparent;
+    text-decoration: none;
     font-size: 10px;
     font-weight: 800;
+    transition: all 0.2s ease;
   }
 
   .nav-item.active {
     color: var(--text-main);
-    background: rgba(15,35,60,0.05);
+    background: rgba(15, 35, 60, 0.05);
     transform: translateY(-1px);
   }
 
@@ -1009,7 +1291,7 @@
     justify-content: center;
     color: #fff;
     font-size: 16px;
-    box-shadow: 0 6px 16px rgba(15,35,60,0.14);
+    box-shadow: 0 6px 16px rgba(15, 35, 60, 0.14);
   }
 
   .nav-home { background: linear-gradient(135deg, #2b77d0, #0f4d99); }
@@ -1031,17 +1313,8 @@
   }
 
   @media (max-width: 420px) {
-    .role-grid,
-    .kpi-grid {
+    .role-grid {
       grid-template-columns: 1fr;
-    }
-
-    .metric-wide {
-      grid-column: span 1;
-    }
-
-    .coaching-filter-bar {
-      flex-direction: column;
     }
 
     .header-name {
@@ -1059,6 +1332,19 @@
   }
 
   @media (min-width: 768px) {
+    .coaching-region-card-grid {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
+    .coaching-monitor-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .coaching-list-box {
+      max-height: 520px;
+    }
+
     body {
       padding-bottom: 118px;
       font-size: 14px;
@@ -1080,6 +1366,11 @@
       padding: 20px 20px 10px;
     }
 
+    .dashboard-grid {
+      grid-template-columns: minmax(340px, 0.9fr) minmax(420px, 1.1fr);
+      align-items: start;
+    }
+
     .home-layout {
       grid-template-columns: minmax(360px, 0.85fr) minmax(420px, 1.15fr);
       align-items: stretch;
@@ -1093,19 +1384,22 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
-    .coaching-status-grid {
-      grid-template-columns: repeat(6, minmax(0, 1fr));
+    .pipeline-grid,
+    .coaching-grid {
+      grid-template-columns: minmax(340px, 0.8fr) minmax(520px, 1.2fr);
+      align-items: start;
     }
 
-    .coaching-monitor-grid {
-      grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+    .admin-grid {
+      grid-template-columns: minmax(360px, 520px);
+      justify-content: center;
     }
 
     .section-title-main {
       font-size: 22px;
     }
 
-    .data-table,
+    .table-modern,
     .table-interaktif {
       font-size: 11px;
     }
