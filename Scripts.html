@@ -8,7 +8,13 @@
   let currentSort = { col: 'nama', asc: true };
   let pipeSort = { col: 'debitur', asc: true };
   let coachingRows = [];
-  let coachingFilter = { level: 'all', region: '', cabang: '', status: '' };
+  let coachingRegionByBranch = {};
+  let coachingLeaderByBranch = {};
+  let coachingSatuanOptions = [];
+  let selectedCoachingStaffKey = '';
+  let coachingLastFocus = { region: '', cabang: '', status: 'BELUM COACHING', staffKey: '' };
+  let coachingFilter = { level: 'all', region: '', cabang: '', jabatan: '', status: 'BELUM COACHING' };
+  const coachingRegionBuckets = ['REGION 1', 'REGION 2', 'REGION 3', 'REGION 4', 'LAINNYA'];
   let currentPage = 'home';
 
   const pageOrder = ['home', 'pipe', 'coaching', 'admin'];
@@ -302,7 +308,6 @@
 
   function filterTablePipe() {
     const keyword = (getValue('p-search') || '').toLowerCase().trim();
-
     if (!keyword) {
       renderTablePipe(sortPipeRows(pipeFiltered));
       return;
@@ -409,18 +414,18 @@
     setText('k-conv', (metrics.apk > 0 ? ((metrics.app / metrics.apk) * 100).toFixed(1) : '0.0') + '%');
     setText('k-avg', 'Rp ' + (metrics.apk > 0 ? Math.round(metrics.pla / metrics.apk).toLocaleString('id-ID') : '0'));
 
-    setFunnelValue('fn-naik', metrics.apk, metrics.apk);
+    setText('fn-naik', metrics.apk.toLocaleString('id-ID'));
     setFunnelValue('fn-app', metrics.app, metrics.apk);
     setFunnelValue('fn-pen', metrics.pen, metrics.apk);
     setFunnelValue('fn-rej', metrics.rej, metrics.apk);
     setFunnelValue('fn-cair', metrics.cair, metrics.apk);
+    ensurePipelineFunnelStructure();
 
     [1, 2, 3, 4].forEach(i => {
       setText('ag-' + i, metrics.ag[i - 1].toLocaleString('id-ID'));
     });
 
     const sorted = Object.entries(salesPerf).sort((a, b) => b[1].p - a[1].p);
-
     let topHtml = '';
     sorted.slice(0, 10).forEach((item, i) => {
       topHtml += `<div class="rank-row"><span>${i + 1}. ${escapeHtml(item[0])}</span><b>Rp ${item[1].p.toLocaleString('id-ID')}</b></div>`;
@@ -436,19 +441,43 @@
     const emptyMessage = rows.length
       ? '<div class="empty-state">Belum ada peringkat sales</div>'
       : '<div class="empty-state">Tidak ada data pada filter ini. Cek tanggal, cabang, atau sales.</div>';
-
     if (top) top.innerHTML = topHtml || emptyMessage;
     if (bot) bot.innerHTML = botHtml || emptyMessage;
 
     renderPipelineMixChart(productMix);
   }
 
-  function setFunnelValue(id, value, total) {
-    const countEl = document.getElementById(id);
-    const pctEl = document.getElementById(id + '-p');
+  function ensurePipelineFunnelStructure() {
+    ['fn-app', 'fn-pen', 'fn-rej', 'fn-cair'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const countEl = el.querySelector('.funnel-count');
+      const pctEl = el.querySelector('.funnel-pct');
+      if (!countEl || !pctEl) {
+        console.warn('Pipeline funnel structure repaired for:', id);
+        el.innerHTML = '<b class="funnel-count">0</b><small class="funnel-pct">0%</small>';
+      }
+    });
+  }
 
-    const pct = total > 0 ? ((Number(value) || 0) / total * 100).toFixed(1) : '0.0';
-    if (countEl) countEl.innerText = (Number(value) || 0).toLocaleString('id-ID');
+  function setFunnelValue(id, value, total) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    const safeValue = Number(value) || 0;
+    const safeTotal = Number(total) || 0;
+    const pct = safeTotal > 0 ? ((safeValue / safeTotal) * 100).toFixed(1) : '0.0';
+    let countEl = el.querySelector('.funnel-count');
+    let pctEl = el.querySelector('.funnel-pct');
+
+    // Self-healing guard: if markup changes or gets replaced, rebuild stable funnel nodes.
+    if (!countEl || !pctEl) {
+      el.innerHTML = '<b class="funnel-count">0</b><small class="funnel-pct">0%</small>';
+      countEl = el.querySelector('.funnel-count');
+      pctEl = el.querySelector('.funnel-pct');
+    }
+
+    if (countEl) countEl.innerText = safeValue.toLocaleString('id-ID');
     if (pctEl) pctEl.innerText = pct + '%';
   }
 
@@ -488,7 +517,6 @@
 
   function renderTablePipe(data) {
     let h = '';
-
     data.slice(0, rowLimit).forEach(r => {
       const status = String(r[3] || '');
       const keputusan = String(r[5] || '');
@@ -514,7 +542,6 @@
     if (body) {
       body.innerHTML = h || "<tr><td colspan='5' class='empty-state'>Tidak ada data pipeline pada filter ini.</td></tr>";
     }
-
     setText('p-info', `${data.length} Data Terfilter`);
     updatePipeSortIndicators();
   }
@@ -575,10 +602,10 @@
 
   function updateHeaderSubtitle() {
     const map = {
-      home: 'MODUL : Ringkasan performa, achievement, dan pencairan',
-      pipe: 'MODUL : Monitoring funnel, aging, dan kualitas pipeline',
-      coaching: 'MODUL : Pendampingan staff dan tindak lanjut coaching',
-      admin: ',ODUL : Pusat unggah data dan kontrol pembaruan dashboard'
+      home: 'Ringkasan performa, achievement, dan pencairan',
+      pipe: 'Monitoring funnel, aging, dan kualitas pipeline',
+      coaching: 'Pendampingan staff dan tindak lanjut coaching',
+      admin: 'Pusat unggah data dan kontrol pembaruan dashboard'
     };
 
     setText('header-subtitle', map[currentPage] || '');
@@ -653,13 +680,45 @@
   function fetchCoachingAddon() {
     google.script.run
       .withSuccessHandler(res => {
-        dbCoaching = res || { master: [], coaching: [], progress: [] };
+        dbCoaching = res || { master: [], coaching: [], progress: [], regionMap: [], satuan: [] };
+        prepareCoachingReferenceData();
         renderCoachingInteractiveTable();
       })
       .withFailureHandler(err => {
         console.error(err);
       })
       .getCoachingFullData();
+  }
+
+  function prepareCoachingReferenceData() {
+    coachingRegionByBranch = {};
+    coachingLeaderByBranch = {};
+    coachingSatuanOptions = [];
+
+    const regionRows = dbCoaching.regionMap || [];
+    if (regionRows.length > 1) {
+      const hdr = regionRows[0];
+      const idxCab = getHeaderIndex(hdr, ['cabang', 'branch'], 0);
+      const idxRegion = getHeaderIndex(hdr, ['region', 'wilayah', 'area'], 1);
+      const idxBm = getHeaderIndex(hdr, ['bm', 'branch manager', 'nama bm', 'rh', 'region head'], 2);
+      regionRows.slice(1).forEach(r => {
+        const cab = String(r[idxCab] || '').trim().toUpperCase();
+        if (!cab) return;
+        const region = normalizeRegionText(r[idxRegion] || '');
+        const bm = String(r[idxBm] || '').trim();
+        if (region) coachingRegionByBranch[cab] = region;
+        if (bm) coachingLeaderByBranch[cab] = bm;
+      });
+    }
+
+    const satuanRows = dbCoaching.satuan || [];
+    if (satuanRows.length > 0) {
+      const startIdx = satuanRows.length > 1 ? 1 : 0;
+      const opts = satuanRows.slice(startIdx)
+        .map(r => String((r && r[1]) || '').trim())
+        .filter(Boolean);
+      coachingSatuanOptions = [...new Set(opts)];
+    }
   }
 
   function getHeaderIndex(headers, candidates, fallback) {
@@ -679,20 +738,29 @@
 
     const master = dbCoaching.master || [];
     if (master.length < 2) {
-      body.innerHTML = "<tr><td colspan='7' class='empty-state'>Data DB_Karyawan / Master_Karyawan belum tersedia.</td></tr>";
+      body.innerHTML = "<tr><td colspan='5' class='empty-state'>Data Master_Karyawan belum tersedia.</td></tr>";
       return;
     }
 
     coachingRows = buildCoachingRows();
+    populateSatuanOptions();
     window.dataTabelCoaching = coachingRows;
+    applyCoachingLastFocus();
     renderCoachingDashboard();
     sortCoachingInteractive(currentSort.col || 'nama', true);
+  }
+
+  function applyCoachingLastFocus() {
+    if (!coachingLastFocus) return;
+    if (coachingLastFocus.status) coachingFilter.status = coachingLastFocus.status;
+    if (coachingLastFocus.region) coachingFilter.region = coachingLastFocus.region;
+    if (coachingLastFocus.cabang) coachingFilter.cabang = coachingLastFocus.cabang;
+    if (coachingLastFocus.staffKey) selectedCoachingStaffKey = coachingLastFocus.staffKey;
   }
 
   function buildCoachingRows() {
     const master = dbCoaching.master || [];
     const headers = master[0] || [];
-
     const idxNik = getHeaderIndex(headers, ['nik'], 1);
     const idxNama = getHeaderIndex(headers, ['nama karyawan', 'nama'], 2);
     const idxJab = getHeaderIndex(headers, ['jabatan'], 3);
@@ -701,7 +769,6 @@
     const idxRole = getHeaderIndex(headers, ['role user', 'role'], 6);
 
     const rows = [];
-
     master.slice(1).forEach(m => {
       const nama = String(m[idxNama] || '').trim();
       if (!nama) return;
@@ -714,12 +781,19 @@
       const latest = coachData[0] || null;
       const status = getCoachingStatus(latest);
 
+      const normalized = normalizeStaffPlacement(
+        String(m[idxJab] || '').trim(),
+        String(m[idxRegion] || '').trim(),
+        String(m[idxCab] || '').trim()
+      );
+
       rows.push({
         nik: String(m[idxNik] || '').trim(),
         nama,
-        jab: String(m[idxJab] || '').trim(),
-        region: String(m[idxRegion] || 'REGION LAINNYA').trim() || 'REGION LAINNYA',
-        cab: String(m[idxCab] || '').trim(),
+        jab: normalized.jab,
+        region: resolveRegionByBranch(normalized.cab, normalized.region),
+        cab: normalized.cab,
+        bm: resolveBmByBranch(normalized.cab, ''),
         role: String(m[idxRole] || '').trim(),
         status,
         lastId: latest ? String(latest[0] || '') : '',
@@ -729,6 +803,71 @@
     });
 
     return rows;
+  }
+
+  function isLikelyRegionLabel(value) {
+    const v = String(value || '').toUpperCase().trim();
+    if (!v) return false;
+    return v.includes('REGION') || v.includes('AREA') || v.includes('WILAYAH') || v.includes('KANWIL');
+  }
+
+  function normalizeStaffPlacement(jabRaw, regionRaw, cabRaw) {
+    let jab = String(jabRaw || '').trim();
+    let region = String(regionRaw || '').trim();
+    const cab = String(cabRaw || '').trim();
+
+    // If source columns are swapped, recover by semantic detection.
+    if (!isLikelyRegionLabel(region) && isLikelyRegionLabel(jab)) {
+      const tmp = jab;
+      jab = region;
+      region = tmp;
+    }
+
+    return {
+      jab: jab || 'JABATAN LAINNYA',
+      region: normalizeRegionText(region || ''),
+      cab
+    };
+  }
+
+  function normalizeRegionText(value) {
+    const raw = String(value || '').trim().toUpperCase();
+    if (!raw) return '';
+    if (raw.includes('REGION 1') || /\bR1\b/.test(raw)) return 'REGION 1';
+    if (raw.includes('REGION 2') || /\bR2\b/.test(raw)) return 'REGION 2';
+    if (raw.includes('REGION 3') || /\bR3\b/.test(raw)) return 'REGION 3';
+    if (raw.includes('REGION 4') || /\bR4\b/.test(raw)) return 'REGION 4';
+    if (raw.includes('LAIN')) return 'LAINNYA';
+    return raw;
+  }
+
+  function resolveRegionByBranch(cabang, fallbackRegion) {
+    const key = String(cabang || '').trim().toUpperCase();
+    if (key && coachingRegionByBranch[key]) return coachingRegionByBranch[key];
+    return normalizeRegionText(fallbackRegion || '') || 'LAINNYA';
+  }
+
+  function resolveBmByBranch(cabang, fallbackBm) {
+    const key = String(cabang || '').trim().toUpperCase();
+    if (key && coachingLeaderByBranch[key]) return coachingLeaderByBranch[key];
+    return String(fallbackBm || '').trim();
+  }
+
+  function populateSatuanOptions() {
+    const select = document.getElementById('c-satuan');
+    if (!select) return;
+    const current = select.value;
+    const options = coachingSatuanOptions && coachingSatuanOptions.length
+      ? coachingSatuanOptions
+      : ['Unit', 'Nasabah', 'Miliar', 'Juta', 'Persen', 'Dokumen'];
+    select.innerHTML = '<option value="">Pilih satuan target</option>' +
+      options.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+    if (current && options.includes(current)) select.value = current;
+  }
+
+  function toggleFollowUpFields(isFollowUp) {
+    const wrap = document.getElementById('coaching-followup-fields');
+    if (wrap) wrap.style.display = isFollowUp ? 'block' : 'none';
   }
 
   function getCoachingStatus(latest) {
@@ -755,20 +894,37 @@
     return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   }
 
+  function normalizeRegionLabel(region) {
+    const raw = String(region || '').trim().toUpperCase();
+    if (!raw) return 'LAINNYA';
+    if (raw.includes('REGION 1')) return 'REGION 1';
+    if (raw.includes('REGION 2')) return 'REGION 2';
+    if (raw.includes('REGION 3')) return 'REGION 3';
+    if (raw.includes('REGION 4')) return 'REGION 4';
+    return 'LAINNYA';
+  }
+
   function getVisibleCoachingRows() {
     return (coachingRows || []).filter(r => {
-      const matchRegion = !coachingFilter.region || r.region === coachingFilter.region;
+      const matchRegion = !coachingFilter.region || normalizeRegionLabel(r.region) === coachingFilter.region;
       const matchCabang = !coachingFilter.cabang || r.cab === coachingFilter.cabang;
+      const matchJabatan = !coachingFilter.jabatan || r.jab === coachingFilter.jabatan;
       const matchStatus = !coachingFilter.status || r.status === coachingFilter.status;
-      return matchRegion && matchCabang && matchStatus;
+      return matchRegion && matchCabang && matchJabatan && matchStatus;
     });
   }
 
   function renderCoachingDashboard() {
+    ensureCoachingBelumDefaultScope();
     renderCoachingStats();
-    renderCoachingRegionList();
+    renderCoachingRegionCards();
     renderCoachingBranchList();
+    renderCoachingJobList();
     updateCoachingScopeText();
+  }
+
+  function ensureCoachingBelumDefaultScope() {
+    if (!coachingFilter.status) coachingFilter.status = 'BELUM COACHING';
   }
 
   function renderCoachingStats() {
@@ -800,34 +956,40 @@
     setText('coach-stat-' + id + '-p', pct + '%');
   }
 
-  function renderCoachingRegionList() {
-    const box = document.getElementById('coaching-region-list');
+  function renderCoachingRegionCards() {
+    const box = document.getElementById('coaching-region-card-grid');
     if (!box) return;
-
-    const map = {};
+    const map = { 'REGION 1': 0, 'REGION 2': 0, 'REGION 3': 0, 'REGION 4': 0, 'LAINNYA': 0 };
     (coachingRows || []).forEach(r => {
-      if (!map[r.region]) map[r.region] = { total: 0 };
-      map[r.region].total++;
+      if (r.status !== 'BELUM COACHING') return;
+      const key = normalizeRegionLabel(r.region);
+      map[key] = (map[key] || 0) + 1;
     });
 
-    const html = Object.keys(map).sort().map(region => `
-      <button class="hierarchy-item" onclick="filterCoachingByRegion(${toJsString(region)})">
-        <span>
-          <strong>${escapeHtml(region)}</strong>
-          <small>${map[region].total.toLocaleString('id-ID')} staff</small>
-        </span>
-        <span class="hierarchy-count">${map[region].total.toLocaleString('id-ID')}</span>
-      </button>
-    `).join('');
+    const sorted = [...coachingRegionBuckets].sort((a, b) => (map[b] || 0) - (map[a] || 0));
+    const html = sorted.map((region) => {
+      const count = map[region] || 0;
+      const active = coachingFilter.region === region ? ' active' : '';
+      return `
+        <button class="coaching-region-card${active}" onclick='filterCoachingByRegion(${toJsString(region)})'>
+          <strong>${count.toLocaleString('id-ID')}</strong>
+          <span>${escapeHtml(region)}</span>
+          <small>Belum coaching</small>
+        </button>
+      `;
+    }).join('');
 
-    box.innerHTML = html || '<div class="empty-state">Region belum tersedia.</div>';
+    box.innerHTML = html;
   }
 
   function renderCoachingBranchList() {
     const box = document.getElementById('coaching-branch-list');
     if (!box) return;
 
-    const rows = (coachingRows || []).filter(r => !coachingFilter.region || r.region === coachingFilter.region);
+    const rows = (coachingRows || []).filter(r =>
+      r.status === 'BELUM COACHING' &&
+      (!coachingFilter.region || normalizeRegionLabel(r.region) === coachingFilter.region)
+    );
     const map = {};
     rows.forEach(r => {
       const cab = r.cab || 'CABANG LAINNYA';
@@ -835,8 +997,10 @@
       map[cab].total++;
     });
 
-    const html = Object.keys(map).sort().map(cabang => `
-      <button class="hierarchy-item" onclick="filterCoachingByBranch(${toJsString(cabang)})">
+    const html = Object.keys(map)
+      .sort((a, b) => (map[b].total - map[a].total) || a.localeCompare(b))
+      .map(cabang => `
+      <button class="hierarchy-item${coachingFilter.cabang === cabang ? ' active' : ''}" onclick='filterCoachingByBranch(${toJsString(cabang)})' ondblclick='filterCoachingByBranch(${toJsString(cabang)})'>
         <span>
           <strong>${escapeHtml(cabang)}</strong>
           <small>${map[cabang].total.toLocaleString('id-ID')} staff</small>
@@ -845,14 +1009,46 @@
       </button>
     `).join('');
 
-    box.innerHTML = html || '<div class="empty-state">Cabang belum tersedia.</div>';
+    box.innerHTML = html || '<div class="empty-state">Belum ada data cabang belum coaching pada region ini.</div>';
+  }
+
+  function renderCoachingJobList() {
+    const box = document.getElementById('coaching-job-list');
+    if (!box) return;
+
+    const rows = (coachingRows || []).filter(r =>
+      r.status === 'BELUM COACHING' &&
+      (!coachingFilter.region || normalizeRegionLabel(r.region) === coachingFilter.region) &&
+      (!coachingFilter.cabang || r.cab === coachingFilter.cabang)
+    );
+    const map = {};
+    rows.forEach(r => {
+      const jab = r.jab || 'JABATAN LAINNYA';
+      if (!map[jab]) map[jab] = { total: 0 };
+      map[jab].total++;
+    });
+
+    const html = Object.keys(map)
+      .sort((a, b) => (map[b].total - map[a].total) || a.localeCompare(b))
+      .map(jab => `
+      <button class="hierarchy-item${coachingFilter.jabatan === jab ? ' active' : ''}" onclick='filterCoachingByJob(${toJsString(jab)})' ondblclick='filterCoachingByJob(${toJsString(jab)})'>
+        <span>
+          <strong>${escapeHtml(jab)}</strong>
+          <small>${map[jab].total.toLocaleString('id-ID')} staff</small>
+        </span>
+        <span class="hierarchy-count">${map[jab].total.toLocaleString('id-ID')}</span>
+      </button>
+    `).join('');
+
+    box.innerHTML = html || '<div class="empty-state">Belum ada data jabatan belum coaching pada region ini.</div>';
   }
 
   function updateCoachingScopeText() {
-    let title = 'Semua Region';
-    if (coachingFilter.region) title = coachingFilter.region;
-    if (coachingFilter.cabang) title = coachingFilter.cabang;
-    if (coachingFilter.status) title += ' - ' + coachingFilter.status;
+    const statusText = coachingFilter.status || 'BELUM COACHING';
+    let title = coachingFilter.region ? coachingFilter.region : 'Semua Region';
+    if (coachingFilter.cabang) title += ' / ' + coachingFilter.cabang;
+    if (coachingFilter.jabatan) title += ' / ' + coachingFilter.jabatan;
+    title += ' - ' + statusText;
 
     setText('coaching-active-scope', title);
     setText('coaching-active-subtitle', `${getVisibleCoachingRows().length.toLocaleString('id-ID')} staff tampil di tabel detail.`);
@@ -860,6 +1056,12 @@
 
   function filterCoachingByStatus(status) {
     coachingFilter.status = status;
+    if (status !== 'BELUM COACHING') {
+      coachingFilter.region = '';
+      coachingFilter.cabang = '';
+      coachingFilter.jabatan = '';
+    }
+    coachingLastFocus = { region: coachingFilter.region, cabang: coachingFilter.cabang, status: coachingFilter.status, staffKey: selectedCoachingStaffKey };
     renderCoachingDashboard();
     sortCoachingInteractive(currentSort.col || 'nama', true);
   }
@@ -867,18 +1069,34 @@
   function filterCoachingByRegion(region) {
     coachingFilter.region = region;
     coachingFilter.cabang = '';
+    coachingFilter.jabatan = '';
+    coachingFilter.status = 'BELUM COACHING';
+    coachingLastFocus = { region: coachingFilter.region, cabang: '', status: coachingFilter.status, staffKey: selectedCoachingStaffKey };
     renderCoachingDashboard();
     sortCoachingInteractive(currentSort.col || 'nama', true);
   }
 
   function filterCoachingByBranch(cabang) {
     coachingFilter.cabang = cabang;
+    coachingFilter.jabatan = '';
+    if (!coachingFilter.status) coachingFilter.status = 'BELUM COACHING';
+    coachingLastFocus = { region: coachingFilter.region, cabang: coachingFilter.cabang, status: coachingFilter.status, staffKey: selectedCoachingStaffKey };
+    renderCoachingDashboard();
+    sortCoachingInteractive(currentSort.col || 'nama', true);
+  }
+
+  function filterCoachingByJob(jabatan) {
+    coachingFilter.jabatan = jabatan;
+    if (!coachingFilter.status) coachingFilter.status = 'BELUM COACHING';
+    coachingLastFocus = { region: coachingFilter.region, cabang: coachingFilter.cabang, status: coachingFilter.status, staffKey: selectedCoachingStaffKey };
     renderCoachingDashboard();
     sortCoachingInteractive(currentSort.col || 'nama', true);
   }
 
   function resetCoachingScope() {
-    coachingFilter = { level: 'all', region: '', cabang: '', status: '' };
+    coachingFilter = { level: 'all', region: '', cabang: '', jabatan: '', status: 'BELUM COACHING' };
+    selectedCoachingStaffKey = '';
+    coachingLastFocus = { region: '', cabang: '', status: 'BELUM COACHING', staffKey: '' };
     const search = document.getElementById('coaching-search');
     if (search) search.value = '';
     renderCoachingDashboard();
@@ -888,8 +1106,7 @@
   function filterCoachingDetailTable() {
     sortCoachingInteractive(currentSort.col || 'nama', true);
   }
-
-  function sortCoachingInteractive(col, keepDirection) {
+    function sortCoachingInteractive(col, keepDirection) {
     const data = getVisibleCoachingRows().filter(r => {
       const keyword = (getValue('coaching-search') || '').toLowerCase().trim();
       if (!keyword) return true;
@@ -919,8 +1136,11 @@
       return 0;
     });
 
-    const h = data.map(r => `
-      <tr onclick="handleRowClickCoaching(${toJsString(r.nama)}, ${toJsString(r.cab)}, ${toJsString(r.lastId)}, ${toJsString(r.region)})">
+    const h = data.map(r => {
+      const staffKey = `${r.nik}__${r.nama}`;
+      const activeClass = selectedCoachingStaffKey === staffKey ? 'row-active' : '';
+      return `
+      <tr class="${activeClass}" onclick='handleRowClickCoaching(${toJsString(r.nik)}, ${toJsString(r.nama)}, ${toJsString(r.cab)}, ${toJsString(r.lastId)}, ${toJsString(r.region)}, ${toJsString(r.jab)}, ${toJsString(r.bm)}, ${toJsString(r.status)})' ondblclick='handleRowClickCoaching(${toJsString(r.nik)}, ${toJsString(r.nama)}, ${toJsString(r.cab)}, ${toJsString(r.lastId)}, ${toJsString(r.region)}, ${toJsString(r.jab)}, ${toJsString(r.bm)}, ${toJsString(r.status)})'>
         <td>${escapeHtml(r.nik)}</td>
         <td><b>${escapeHtml(r.nama)}</b></td>
         <td>${escapeHtml(r.region)}</td>
@@ -929,7 +1149,8 @@
         <td><span class="coaching-status-badge ${getCoachingBadgeClass(r.status)}">${escapeHtml(r.status)}</span></td>
         <td>${escapeHtml(r.lastDate)}</td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
 
     const body = document.getElementById('coaching-table-body');
     if (body) body.innerHTML = h || "<tr><td colspan='7' class='empty-state'>Belum ada data coaching pada filter ini.</td></tr>";
@@ -946,11 +1167,21 @@
     return 'badge-on-progress';
   }
 
-  function handleRowClickCoaching(nama, cab, lastId, region) {
+  function handleRowClickCoaching(nik, nama, cab, lastId, region, jabatan, bm, status) {
+    selectedCoachingStaffKey = `${nik}__${nama}`;
+    coachingLastFocus = { region: coachingFilter.region, cabang: coachingFilter.cabang, status: coachingFilter.status || 'BELUM COACHING', staffKey: selectedCoachingStaffKey };
+    clearCoachingForm();
+    setValue('c-nik', nik || '');
     setValue('c-staff', nama || '');
     setValue('c-cabang', cab || '');
+    setValue('c-jabatan', jabatan || '');
     setValue('c-parent-id', lastId || '');
-    setValue('c-region', region || '');
+    setValue('c-region', resolveRegionByBranch(cab, region));
+    setValue('c-bm', resolveBmByBranch(cab, bm));
+    const isFollowUp = !!lastId || String(status || '').toUpperCase() !== 'BELUM COACHING';
+    setValue('c-row-mode', isFollowUp ? 'followup' : 'new');
+    toggleFollowUpFields(isFollowUp);
+    clearCoachingFieldErrors();
 
     if (lastId) {
       Swal.fire({
@@ -961,11 +1192,55 @@
     }
 
     switchPage('coaching', true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const form = document.getElementById('coaching-form-section');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function startNewCoachingInput() {
+    selectedCoachingStaffKey = '';
+    clearCoachingForm();
+    setValue('c-row-mode', 'new');
+    toggleFollowUpFields(false);
+    clearCoachingFieldErrors();
+    const form = document.getElementById('coaching-form-section');
+    if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function clearCoachingFieldErrors() {
+    ['c-nik', 'c-staff', 'c-cabang', 'c-jabatan', 'c-region', 'c-root', 'c-topic', 'c-target', 'c-satuan', 'c-target-date', 'c-how'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.classList.remove('input-error');
+    });
+  }
+
+  function validateCoachingForm(obj) {
+    const required = [
+      { id: 'c-nik', value: obj.nik, label: 'NIK / NPK' },
+      { id: 'c-staff', value: obj.staff, label: 'Nama Staff' },
+      { id: 'c-cabang', value: obj.cabang, label: 'Cabang' },
+      { id: 'c-jabatan', value: obj.jabatan, label: 'Jabatan' },
+      { id: 'c-region', value: obj.region, label: 'Region' },
+      { id: 'c-root', value: obj.root, label: 'Root Cause' },
+      { id: 'c-topic', value: obj.topic, label: 'Topic Coaching' },
+      { id: 'c-target', value: obj.target, label: 'Target / Action Plan' },
+      { id: 'c-satuan', value: obj.satuanTarget, label: 'Satuan Target' },
+      { id: 'c-target-date', value: obj.targetDate, label: 'Target Date' },
+      { id: 'c-how', value: obj.how, label: 'How (it Will Be Done)' }
+    ];
+
+    clearCoachingFieldErrors();
+    const missing = required.filter(f => !String(f.value || '').trim());
+    missing.forEach(f => {
+      const el = document.getElementById(f.id);
+      if (el) el.classList.add('input-error');
+    });
+
+    return missing;
   }
 
   function saveCoachingInteractive() {
     const obj = {
+      nik: getValue('c-nik'),
       cabang: getValue('c-cabang'),
       staff: getValue('c-staff'),
       root: getValue('c-root'),
@@ -973,12 +1248,20 @@
       target: getValue('c-target'),
       parentId: getValue('c-parent-id'),
       bm: getValue('c-bm'),
+      jabatan: getValue('c-jabatan'),
       region: getValue('c-region'),
-      lastPerf: getValue('c-perf')
+      lastPerf: getValue('c-perf'),
+      satuanTarget: getValue('c-satuan'),
+      targetDate: getValue('c-target-date'),
+      how: getValue('c-how'),
+      result: getValue('c-result'),
+      feedback: getValue('c-feedback'),
+      status: getValue('c-row-mode') === 'followup' ? 'NEED FU' : 'ONGOING'
     };
 
-    if (!obj.staff || !obj.root) {
-      Swal.fire('Error', 'Pilih karyawan dan isi root cause.', 'error');
+    const missing = validateCoachingForm(obj);
+    if (missing.length) {
+      Swal.fire('Validasi', `Field wajib belum lengkap: ${missing.map(f => f.label).join(', ')}`, 'warning');
       return;
     }
 
@@ -991,6 +1274,12 @@
     google.script.run
       .withSuccessHandler(() => {
         Swal.fire('Sukses', 'Data Coaching / Follow-Up tersimpan.', 'success');
+        coachingLastFocus = {
+          region: obj.region || coachingFilter.region || '',
+          cabang: obj.cabang || coachingFilter.cabang || '',
+          status: 'BELUM COACHING',
+          staffKey: selectedCoachingStaffKey
+        };
         clearCoachingForm();
         fetchCoachingAddon();
       })
@@ -1001,8 +1290,10 @@
   }
 
   function clearCoachingForm() {
-    ['c-staff', 'c-cabang', 'c-root', 'c-topic', 'c-target', 'c-parent-id', 'c-bm', 'c-region', 'c-perf']
+    ['c-nik', 'c-staff', 'c-cabang', 'c-jabatan', 'c-root', 'c-topic', 'c-target', 'c-parent-id', 'c-bm', 'c-region', 'c-perf', 'c-satuan', 'c-target-date', 'c-how', 'c-result', 'c-feedback']
       .forEach(id => setValue(id, ''));
+    setValue('c-row-mode', 'new');
+    toggleFollowUpFields(false);
   }
 
   function debounceSearch() {
