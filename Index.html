@@ -1,145 +1,565 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <base target="_top">
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <?!= include('Styles'); ?>
-</head>
-<body onload="initApp()">
-  <div id="loader-global">
-    <div class="loader-card">
-      <div class="spinner-grow text-primary"></div>
-      <p class="mt-3 mb-1 fw-bold">Memuat Coaching Management System</p>
-      <small>Mohon menunggu sedang Menyiapkan data dan tampilan...</small>
-    </div>
-  </div>
+/**
+ * ============================================================================
+ * EXECUTIVE DASHBOARD - BPR KS
+ * Versi: 186.0 (BYPASS MODE - DEBUG)
+ * ============================================================================
+ * MODE: Bypass semua filter sementara untuk identifikasi masalah
+ * ============================================================================
+ */
 
-  <div id="app-shell">
-    <header class="top-shell">
-      <div class="header-box">
-        <div class="header-row">
-          <div>
-            <div class="header-label">COACHING MONITORING SYSTEM - BPR KS</div>
-            <h1 class="header-name" id="u-nama">MEMUAT...</h1>
-            <div class="header-sub" id="header-subtitle">Dashboard harian untuk monitoring bisnis</div>
-          </div>
+var CONFIG = {
+  SPREADSHEET_ID: '1fKi00TOdtqwlyP6Uk20sGbJHrm_dsQ5frlkFm6jMAzE',
+  SHEET_USER_ID: 'User_ID',
+  SHEET_AUDIT_LOG: 'Audit_Log',
+  SHEET_RAW_ACHV_CS: 'Raw_Achv_CS',
+  SHEET_RAW_ACHV_SPV: 'Raw_Achv_SPV',
+  SHEET_RAW_CAIR_CS: 'Raw_Cair_CS',
+  SHEET_RAW_CAIR_SPV: 'Raw_Cair_SPV',
+  SHEET_RAW_PIPELINE: 'Raw_Pipeline',
+  SHEET_DB_KARYAWAN: 'DB_Karyawan',
+  SHEET_MASTER_KARYAWAN: 'Master_Karyawan',
+  SHEET_RAW_COACHING: 'Raw_Coaching',
+  SHEET_RAW_COACHING_PROGRESS: 'Raw_Coaching_Progress'
+};
 
-          <button class="refresh-btn" onclick="refreshData()">
-            <i class="bi bi-arrow-clockwise"></i>
-            <span>Refresh</span>
-          </button>
-        </div>
+// ============================================================================
+// SPREADSHEET HELPER
+// ============================================================================
+function getLockedSpreadsheet() {
+  try {
+    return SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
+  } catch(e) {
+    console.error('openById FAILED:', e.message);
+    try {
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      console.log('FALLBACK ke getActiveSpreadsheet:', ss.getId());
+      return ss;
+    } catch(e2) {
+      throw new Error('GAGAL AKSES SEMUA SPREADSHEET: ' + e2.message);
+    }
+  }
+}
 
-        <div class="header-menu-slider" id="header-menu-slider">
-          <button class="quick-tab quick-home active" onclick="switchPage('home')">
-            <i class="bi bi-speedometer2"></i>
-            <span>Home</span>
-          </button>
-          <button class="quick-tab quick-pipe" onclick="switchPage('pipe')">
-            <i class="bi bi-funnel-fill"></i>
-            <span>Pipeline</span>
-          </button>
-          <button class="quick-tab quick-coaching" onclick="switchPage('coaching')">
-            <i class="bi bi-person-badge-fill"></i>
-            <span>Coaching</span>
-          </button>
-          <button class="quick-tab quick-admin" id="quick-admin-btn" onclick="switchPage('admin')">
-            <i class="bi bi-shield-lock-fill"></i>
-            <span>Admin</span>
-          </button>
-        </div>
-      </div>
-    </header>
+function doGet() {
+  return HtmlService.createTemplateFromFile('Index')
+    .evaluate()
+    .setTitle('Executive Dashboard - BPR KS')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
 
-    <main id="page-container" class="page-container">
-      <div class="page-track" id="page-track">
-        <section class="page-panel" id="panel-home">
-          <div class="page-scroll">
-            <?!= include('Home'); ?>
-          </div>
-        </section>
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
 
-        <section class="page-panel" id="panel-pipe">
-          <div class="page-scroll">
-            <?!= include('Pipeline'); ?>
-          </div>
-        </section>
+/* ============================================================================
+   A. SECURITY & ACCESS CONTROL (BYPASS SEMENTARA)
+   ============================================================================ */
 
-        <section class="page-panel" id="panel-coaching">
-          <div class="page-scroll">
-            <?!= include('Coaching'); ?>
-          </div>
-        </section>
+function getUserData() {
+  try {
+    var email = Session.getActiveUser().getEmail().toLowerCase();
+    var ss = getLockedSpreadsheet();
+    var sh = ss.getSheetByName(CONFIG.SHEET_USER_ID);
+    var data = sh ? sh.getDataRange().getValues() : [];
+    
+    // Owner override (yulius)
+    if (email.includes("yulius") || email === "") {
+      return { email: email, nama: "YULIUS PUJI LAKSONO", role: "Owner", cabang: "ALL", level: 99 };
+    }
+    
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][0] && data[i][0].toLowerCase() === email) {
+        return { 
+          email: data[i][0], 
+          nama: data[i][1], 
+          role: data[i][3], 
+          cabang: data[i][4],
+          level: Number(data[i][5]) || 1
+        };
+      }
+    }
+  } catch(e) {
+    console.error('getUserData error:', e);
+  }
+  // BYPASS: Jika tidak ditemukan, tetap return sebagai Guest dengan akses ALL
+  return { nama: "GUEST", role: "Admin", cabang: "ALL", level: 99 };
+}
 
-        <section class="page-panel" id="panel-admin">
-          <div class="page-scroll">
-            <div id="v-admin">
-              <div class="card-mewah card-admin shadow-sm">
-                <div class="section-chip admin-chip">Admin Center</div>
-                <h6 class="section-title-main">Upload Data Excel</h6>
-                <p class="section-desc">Unggah data harian achievement, pencairan, atau pipeline dengan format Excel/CSV.</p>
+function canAccess(user, targetCabang) {
+  // BYPASS TOTAL: Semua user bisa akses semua cabang
+  return true;
+}
 
-                <div class="row g-3">
-                  <div class="col-12 col-md-4">
-                    <label class="form-label-lite">Tanggal Data</label>
-                    <input type="date" id="u-t" class="form-control input-elegant">
-                  </div>
+function logAccess(action, detail) {
+  try {
+    var ss = getLockedSpreadsheet();
+    var sh = ss.getSheetByName(CONFIG.SHEET_AUDIT_LOG) || ss.insertSheet(CONFIG.SHEET_AUDIT_LOG);
+    var user = getUserData();
+    sh.appendRow([new Date(), user.email || "system", user.nama || "system", user.role || "-", action, detail || "-"]);
+  } catch(e) {}
+}
 
-                  <div class="col-12 col-md-4">
-                    <label class="form-label-lite">Jenis Upload</label>
-                    <select id="u-j" class="form-select input-elegant">
-                      <option value="1">Achv CS</option>
-                      <option value="2">Achv SPV</option>
-                      <option value="4">Cair CS</option>
-                      <option value="5">Cair SPV</option>
-                      <option value="7">Pipeline</option>
-                    </select>
-                  </div>
+/* ============================================================================
+   B. DATA HELPERS
+   ============================================================================ */
 
-                  <div class="col-12 col-md-4">
-                    <label class="form-label-lite">File Excel</label>
-                    <input type="file" id="u-f" class="form-control input-elegant" accept=".xlsx,.xls,.csv">
-                  </div>
-                </div>
+function isJunkBranch(val) {
+  if (!val) return true;
+  var v = val.toString().toUpperCase();
+  var junk = ["ITEM", "VOLUME", "CABANG", "STAFF", "DEBITUR", "PLAFOND", "APK NAIK", "APP BLM CAIR", "BELUM"];
+  return junk.some(function(word) { return v.indexOf(word) > -1; });
+}
 
-                <button class="btn btn-admin-main w-100 fw-bold py-3 shadow-sm mt-4" onclick="execU()">
-                  <i class="bi bi-upload me-2"></i>UNGGAH DATA
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-  </div>
+function formatTgl(val) {
+  if (val instanceof Date) return Utilities.formatDate(val, "GMT+7", "yyyy-MM-dd");
+  return String(val).substring(0, 10);
+}
 
-  <nav class="nav-fix">
-    <button onclick="switchPage('home')" class="nav-item active" id="n-home">
-      <span class="nav-icon nav-home"><i class="bi bi-speedometer2"></i></span>
-      <span class="nav-text">Home</span>
-    </button>
-    <button onclick="switchPage('pipe')" class="nav-item" id="n-pipe">
-      <span class="nav-icon nav-pipe"><i class="bi bi-funnel-fill"></i></span>
-      <span class="nav-text">Pipeline</span>
-    </button>
-    <button onclick="switchPage('coaching')" class="nav-item" id="n-coaching">
-      <span class="nav-icon nav-coaching"><i class="bi bi-person-badge-fill"></i></span>
-      <span class="nav-text">Coaching</span>
-    </button>
-    <button onclick="switchPage('admin')" class="nav-item" id="n-admin">
-      <span class="nav-icon nav-admin"><i class="bi bi-shield-lock-fill"></i></span>
-      <span class="nav-text">Admin</span>
-    </button>
-  </nav>
+/* ============================================================================
+   C. DASHBOARD DATA — BYPASS FILTER + DEBUG INFO
+   ============================================================================ */
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <?!= include('Scripts'); ?>
-</body>
-</html>
+function getDashboardData() {
+  var user = getUserData();
+  
+  // Hapus cache
+  CacheService.getScriptCache().removeAll(["db_v184", "db_v185", "db_v186"]);
+  
+  var ss = getLockedSpreadsheet();
+  var res = { 
+    u: user, 
+    achv: [], 
+    cair: [], 
+    pipeline: [], 
+    pipelineFunnel: {}, 
+    listCHome: [], 
+    listCPipe: [], 
+    listS: [],
+    debug: {} // DEBUG INFO
+  };
+  
+  // Kumpulkan debug info
+  var debugInfo = {
+    spreadsheetId: ss.getId(),
+    spreadsheetName: ss.getName(),
+    userEmail: user.email || "unknown",
+    userRole: user.role,
+    userCabang: user.cabang,
+    sheetsFound: [],
+    errors: []
+  };
+
+  try {
+    // --- Achievement CS ---
+    var shAchvCS = ss.getSheetByName(CONFIG.SHEET_RAW_ACHV_CS);
+    debugInfo.sheetsFound.push({name: CONFIG.SHEET_RAW_ACHV_CS, found: !!shAchvCS, rows: shAchvCS ? shAchvCS.getLastRow() : 0});
+    
+    if (shAchvCS && shAchvCS.getLastRow() > 0) {
+      var data = shAchvCS.getDataRange().getValues();
+      data.forEach(function(r, idx) {
+        if(idx === 0 || !r[1] || r[1] === "CABANG") return;
+        var tgl = formatTgl(r[0]);
+        var cab = String(r[1]).trim();
+        if (!isJunkBranch(cab)) {
+          if (res.listCHome.indexOf(cab) === -1) res.listCHome.push(cab);
+          res.achv.push([tgl, cab, String(r[2]).trim(), "cs", Number(r[3])||0, Number(r[4])||0]);
+        }
+      });
+    }
+
+    // --- Achievement SPV ---
+    var shAchvSPV = ss.getSheetByName(CONFIG.SHEET_RAW_ACHV_SPV);
+    debugInfo.sheetsFound.push({name: CONFIG.SHEET_RAW_ACHV_SPV, found: !!shAchvSPV, rows: shAchvSPV ? shAchvSPV.getLastRow() : 0});
+    
+    if (shAchvSPV && shAchvSPV.getLastRow() > 0) {
+      var data = shAchvSPV.getDataRange().getValues();
+      data.forEach(function(r, idx) {
+        if(idx === 0 || !r[1] || r[1] === "CABANG") return;
+        var tgl = formatTgl(r[0]);
+        var cab = String(r[1]).trim();
+        if (!isJunkBranch(cab)) {
+          if (res.listCHome.indexOf(cab) === -1) res.listCHome.push(cab);
+          res.achv.push([tgl, cab, String(r[2]).trim(), "spv", Number(r[3])||0, Number(r[4])||0]);
+        }
+      });
+    }
+
+    // --- Cair CS ---
+    var shCairCS = ss.getSheetByName(CONFIG.SHEET_RAW_CAIR_CS);
+    debugInfo.sheetsFound.push({name: CONFIG.SHEET_RAW_CAIR_CS, found: !!shCairCS, rows: shCairCS ? shCairCS.getLastRow() : 0});
+    
+    if (shCairCS && shCairCS.getLastRow() > 0) {
+      var data = shCairCS.getDataRange().getValues();
+      data.forEach(function(r, idx) {
+        if(idx === 0 || !r[1] || r[1] === "CABANG") return;
+        var tgl = formatTgl(r[0]);
+        var cab = String(r[1]).trim();
+        if (!isJunkBranch(cab)) {
+          var mapP = [
+            {n:"KABHTSP",i:3,v:4},{n:"KAB",i:5,v:6},{n:"KPLM",i:7,v:8},
+            {n:"KABM",i:9,v:10},{n:"KPSM",i:11,v:12},{n:"KBMBL",i:13,v:14},{n:"KABEKS",i:15,v:16}
+          ];
+          mapP.forEach(function(p) {
+            var itm = Number(r[p.i]) || 0; 
+            var vol = Number(r[p.v]) || 0;
+            if (itm > 0 || vol > 0) {
+              res.cair.push([tgl, cab, String(r[2]).trim(), p.n, itm, vol]);
+            }
+          });
+        }
+      });
+    }
+
+    // --- Cair SPV ---
+    var shCairSPV = ss.getSheetByName(CONFIG.SHEET_RAW_CAIR_SPV);
+    debugInfo.sheetsFound.push({name: CONFIG.SHEET_RAW_CAIR_SPV, found: !!shCairSPV, rows: shCairSPV ? shCairSPV.getLastRow() : 0});
+    
+    if (shCairSPV && shCairSPV.getLastRow() > 0) {
+      var data = shCairSPV.getDataRange().getValues();
+      data.forEach(function(r, idx) {
+        if(idx === 0 || !r[1] || r[1] === "CABANG") return;
+        var tgl = formatTgl(r[0]);
+        var cab = String(r[1]).trim();
+        if (!isJunkBranch(cab)) {
+          var mapP = [
+            {n:"KABHTSP",i:3,v:4},{n:"KAB",i:5,v:6},{n:"KPLM",i:7,v:8},
+            {n:"KABM",i:9,v:10},{n:"KPSM",i:11,v:12},{n:"KBMBL",i:13,v:14},{n:"KABEKS",i:15,v:16}
+          ];
+          mapP.forEach(function(p) {
+            var itm = Number(r[p.i]) || 0; 
+            var vol = Number(r[p.v]) || 0;
+            if (itm > 0 || vol > 0) {
+              res.cair.push([tgl, cab, String(r[2]).trim(), p.n, itm, vol]);
+            }
+          });
+        }
+      });
+    }
+
+    // --- Pipeline ---
+    var shP = ss.getSheetByName(CONFIG.SHEET_RAW_PIPELINE);
+    debugInfo.sheetsFound.push({name: CONFIG.SHEET_RAW_PIPELINE, found: !!shP, rows: shP ? shP.getLastRow() : 0});
+    
+    if (shP && shP.getLastRow() > 0) {
+      var dataP = shP.getDataRange().getValues();
+      var funnelCounts = {};
+      var totalPipeline = 0;
+      
+      dataP.forEach(function(r, idx) {
+        if (idx === 0 || !r[0] || !r[2] || String(r[2]).toLowerCase().includes("debitur")) return;
+        var rawB = r[1], msec;
+        if (typeof rawB === 'number') msec = (rawB - 25569) * 86400 * 1000;
+        else if (rawB instanceof Date) msec = rawB.getTime();
+        else msec = new Date().getTime();
+        
+        var tglIn = formatTgl(r[0]);
+        var deb = String(r[2]).trim(); 
+        var cab = String(r[3]).trim(); 
+        var stat = String(r[4]).trim(); 
+        var mix = String(r[5]).trim(); 
+        var kep = String(r[6]).trim(); 
+        var sal = String(r[7] || "-").trim(); 
+        var pla = Number(String(r[10]||"0").replace(/[^0-9.-]+/g,"")) || 0;
+        
+        if (cab && !isJunkBranch(cab)) {
+          if (res.listCPipe.indexOf(cab) === -1) res.listCPipe.push(cab);
+          if (sal !== "-" && res.listS.indexOf(sal) === -1) res.listS.push(sal);
+          
+          var stage = stat.toUpperCase();
+          funnelCounts[stage] = (funnelCounts[stage] || 0) + 1;
+          totalPipeline++;
+          
+          res.pipeline.push([tglIn, msec, deb, stat, mix, kep, sal, pla, cab]);
+        }
+      });
+      
+      res.pipelineFunnel = {
+        stages: funnelCounts,
+        total: totalPipeline,
+        percentages: {}
+      };
+      for (var stage in funnelCounts) {
+        res.pipelineFunnel.percentages[stage] = totalPipeline > 0 
+          ? ((funnelCounts[stage] / totalPipeline) * 100).toFixed(1) + "%"
+          : "0%";
+      }
+    }
+
+    // Compile debug info
+    debugInfo.achvCount = res.achv.length;
+    debugInfo.cairCount = res.cair.length;
+    debugInfo.pipelineCount = res.pipeline.length;
+    res.debug = debugInfo;
+    
+    return res;
+    
+  } catch(e) { 
+    debugInfo.errors.push(e.message);
+    res.debug = debugInfo;
+    return res; 
+  }
+}
+
+/* ============================================================================
+   D. PIPELINE FUNNEL API (BYPASS)
+   ============================================================================ */
+
+function getPipelineFunnelData() {
+  var user = getUserData();
+  
+  var ss = getLockedSpreadsheet();
+  var shP = ss.getSheetByName(CONFIG.SHEET_RAW_PIPELINE);
+  if (!shP || shP.getLastRow() < 1) return { stages: {}, total: 0, percentages: {} };
+  
+  var dataP = shP.getDataRange().getValues();
+  var funnelCounts = {};
+  var totalPipeline = 0;
+  
+  dataP.forEach(function(r) {
+    if (!r[0] || !r[2] || String(r[2]).toLowerCase().includes("debitur")) return;
+    var cab = String(r[3]).trim();
+    if (!cab || isJunkBranch(cab)) return;
+    
+    var stat = String(r[4]).trim().toUpperCase();
+    funnelCounts[stat] = (funnelCounts[stat] || 0) + 1;
+    totalPipeline++;
+  });
+  
+  var percentages = {};
+  for (var stage in funnelCounts) {
+    percentages[stage] = totalPipeline > 0 
+      ? ((funnelCounts[stage] / totalPipeline) * 100).toFixed(1)
+      : 0;
+  }
+  
+  return {
+    stages: funnelCounts,
+    total: totalPipeline,
+    percentages: percentages,
+    user: { nama: user.nama, role: user.role, cabang: user.cabang }
+  };
+}
+
+/* ============================================================================
+   E. UPLOAD DATA (BYPASS)
+   ============================================================================ */
+
+function processExcelData(rows, tgl, tipe) {
+  var user = getUserData();
+  
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(30000);
+    var ss = getLockedSpreadsheet();
+    var map = { 
+      "1": CONFIG.SHEET_RAW_ACHV_CS, 
+      "2": CONFIG.SHEET_RAW_ACHV_SPV, 
+      "4": CONFIG.SHEET_RAW_CAIR_CS, 
+      "5": CONFIG.SHEET_RAW_CAIR_SPV, 
+      "7": CONFIG.SHEET_RAW_PIPELINE 
+    };
+    if (!map[tipe]) return "❌ Jenis upload tidak dikenali.";
+    
+    var sh = ss.getSheetByName(map[tipe]) || ss.insertSheet(map[tipe]);
+    var finalData = [];
+    var clean = function(v) { 
+      if (!v || v === "-" || v === "" || v === 0) return 0; 
+      return parseFloat(v.toString().replace(/\./g, "").replace(/,/g, ".")) || 0; 
+    };
+    
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i]; 
+      if (!r[0] || r[0] === "CABANG" || r[0] === "TGL") continue;
+      var row = [tgl];
+      for (var c = 0; c < r.length; c++) {
+        var isNum = (tipe == "7" && (c == 9 || c == 10)) || (tipe != "7" && c >= 2);
+        row.push(isNum ? clean(r[c]) : r[c]);
+      }
+      finalData.push(row);
+    }
+    
+    if (finalData.length > 0) {
+      var oldData = sh.getDataRange().getValues();
+      var filtered = oldData.filter(function(r) {
+        return formatTgl(r[0]) !== tgl;
+      });
+      sh.clearContents();
+      if (filtered.length > 0) sh.getRange(1, 1, filtered.length, filtered[0].length).setValues(filtered);
+      sh.getRange(sh.getLastRow() + 1, 1, finalData.length, finalData[0].length).setValues(finalData);
+      
+      CacheService.getScriptCache().removeAll(["db_v186"]);
+      return "✅ Berhasil upload " + finalData.length + " baris data.";
+    }
+    return "⚠️ Tidak ada data valid untuk diupload.";
+    
+  } catch(e) { 
+    return "❌ Error: " + e.message; 
+  } finally { 
+    lock.releaseLock(); 
+  }
+}
+
+/* ============================================================================
+   F. COACHING MODULE (BYPASS)
+   ============================================================================ */
+
+function getCoachingFullData() {
+  var user = getUserData();
+  
+  var ss = getLockedSpreadsheet();
+  var shM = ss.getSheetByName(CONFIG.SHEET_DB_KARYAWAN) || ss.getSheetByName(CONFIG.SHEET_MASTER_KARYAWAN);
+  var shC = ss.getSheetByName(CONFIG.SHEET_RAW_COACHING) || ss.insertSheet(CONFIG.SHEET_RAW_COACHING);
+  var shP = ss.getSheetByName(CONFIG.SHEET_RAW_COACHING_PROGRESS) || ss.insertSheet(CONFIG.SHEET_RAW_COACHING_PROGRESS);
+
+  var masterData = shM ? shM.getDataRange().getValues() : [];
+  var coachingData = shC.getDataRange().getValues();
+  var progressData = shP.getDataRange().getValues();
+  
+  return {
+    master: masterData,
+    coaching: coachingData,
+    progress: progressData,
+    user: user
+  };
+}
+
+function saveCoachingAction(obj) {
+  var user = getUserData();
+  
+  var ss = getLockedSpreadsheet();
+  var sh = ss.getSheetByName(CONFIG.SHEET_RAW_COACHING);
+  var id = "CHG-" + new Date().getTime();
+
+  sh.appendRow([
+    id,
+    new Date(),
+    obj.cabang,
+    obj.staff,
+    obj.root,
+    obj.topic,
+    obj.target,
+    "ONGOING",
+    obj.parentId || "",
+    obj.bm || "",
+    obj.region || "",
+    obj.lastPerf || ""
+  ]);
+  
+  return "✅ Coaching berhasil disimpan untuk " + obj.staff;
+}
+
+/* ============================================================================
+   G. USER MANAGEMENT (BYPASS)
+   ============================================================================ */
+
+function getAllUsers() {
+  var user = getUserData();
+  
+  var ss = getLockedSpreadsheet();
+  var sh = ss.getSheetByName(CONFIG.SHEET_USER_ID);
+  if (!sh) return { users: [] };
+  
+  var data = sh.getDataRange().getValues();
+  var users = [];
+  for (var i = 1; i < data.length; i++) {
+    users.push({
+      email: data[i][0],
+      nama: data[i][1],
+      nik: data[i][2],
+      role: data[i][3],
+      cabang: data[i][4],
+      level: data[i][5] || 1
+    });
+  }
+  return { users: users, requester: user };
+}
+
+function saveUser(userData) {
+  var user = getUserData();
+  
+  var ss = getLockedSpreadsheet();
+  var sh = ss.getSheetByName(CONFIG.SHEET_USER_ID) || ss.insertSheet(CONFIG.SHEET_USER_ID);
+  
+  var data = sh.getDataRange().getValues();
+  var found = false;
+  for (var i = 1; i < data.length; i++) {
+    if (data[i][0] && data[i][0].toLowerCase() === userData.email.toLowerCase()) {
+      sh.getRange(i + 1, 1, 1, 6).setValues([[
+        userData.email,
+        userData.nama,
+        userData.nik,
+        userData.role,
+        userData.cabang,
+        userData.level || 1
+      ]]);
+      found = true;
+      break;
+    }
+  }
+  
+  if (!found) {
+    sh.appendRow([
+      userData.email,
+      userData.nama,
+      userData.nik,
+      userData.role,
+      userData.cabang,
+      userData.level || 1
+    ]);
+  }
+  
+  return "✅ User " + userData.nama + " berhasil " + (found ? "diupdate" : "ditambahkan");
+}
+
+/* ============================================================================
+   H. TEST ENDPOINT (BISA DIPANGGIL LANGSUNG DARI BROWSER)
+   ============================================================================ */
+
+function testSpreadsheetAccess() {
+  try {
+    var ss = getLockedSpreadsheet();
+    var sheets = ss.getSheets().map(function(s) { 
+      return {name: s.getName(), rows: s.getLastRow()}; 
+    });
+    
+    // Test baca data dari Raw_Achv_CS
+    var shTest = ss.getSheetByName(CONFIG.SHEET_RAW_ACHV_CS);
+    var sampleData = [];
+    if (shTest && shTest.getLastRow() > 1) {
+      var data = shTest.getDataRange().getValues();
+      for (var i = 1; i < Math.min(4, data.length); i++) {
+        sampleData.push(data[i]);
+      }
+    }
+    
+    return {
+      success: true,
+      spreadsheetId: ss.getId(),
+      spreadsheetName: ss.getName(),
+      totalSheets: sheets.length,
+      sheets: sheets,
+      sampleData: sampleData,
+      message: "✅ Berhasil terhubung ke " + ss.getName()
+    };
+  } catch(e) {
+    return {
+      success: false,
+      error: e.message,
+      message: "❌ GAGAL: " + e.message
+    };
+  }
+}
+
+/* ============================================================================
+   I. CACHE CLEAR
+   ============================================================================ */
+
+function clearAllCache() {
+  CacheService.getScriptCache().removeAll(["db_v184", "db_v185", "db_v186"]);
+  return "✅ Cache berhasil dihapus";
+}
+
+/* ============================================================================
+   END OF CODE.GS v186.0
+   ============================================================================ */
