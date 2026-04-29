@@ -16,9 +16,37 @@
       <b id="coaching-active-scope">Semua Region</b>
       <small id="coaching-active-subtitle">Klik kartu status, region, atau cabang untuk melihat detail.</small>
     </div>
-    <button class="btn btn-coaching-reset" onclick="resetCoachingScope()">
+    <button type="button" class="btn btn-coaching-reset" onclick="resetCoachingScope()">
       <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
     </button>
+  </div>
+
+  <div class="coaching-region-card-grid" id="coaching-region-card-grid">
+    <div class="coaching-region-card">
+      <strong>0</strong>
+      <span>REGION 1</span>
+      <small>Belum coaching</small>
+    </div>
+    <div class="coaching-region-card">
+      <strong>0</strong>
+      <span>REGION 2</span>
+      <small>Belum coaching</small>
+    </div>
+    <div class="coaching-region-card">
+      <strong>0</strong>
+      <span>REGION 3</span>
+      <small>Belum coaching</small>
+    </div>
+    <div class="coaching-region-card">
+      <strong>0</strong>
+      <span>REGION 4</span>
+      <small>Belum coaching</small>
+    </div>
+    <div class="coaching-region-card">
+      <strong>0</strong>
+      <span>LAINNYA</span>
+      <small>Belum coaching</small>
+    </div>
   </div>
 
   <div class="coaching-status-grid" id="coaching-status-grid">
@@ -27,31 +55,26 @@
       <span>BELUM COACHING</span>
       <small id="coach-stat-belum-p">0%</small>
     </div>
-
     <div class="coaching-status-card st-need" onclick="filterCoachingByStatus('NEED FU')">
       <strong id="coach-stat-need">0</strong>
       <span>NEED FU</span>
       <small id="coach-stat-need-p">0%</small>
     </div>
-
     <div class="coaching-status-card st-progress" onclick="filterCoachingByStatus('ON PROGRESS')">
       <strong id="coach-stat-progress">0</strong>
       <span>ON PROGRESS</span>
       <small id="coach-stat-progress-p">0%</small>
     </div>
-
     <div class="coaching-status-card st-overdue" onclick="filterCoachingByStatus('OVER DUE')">
       <strong id="coach-stat-overdue">0</strong>
       <span>OVER DUE</span>
       <small id="coach-stat-overdue-p">0%</small>
     </div>
-
     <div class="coaching-status-card st-done" onclick="filterCoachingByStatus('DONE')">
       <strong id="coach-stat-done">0</strong>
       <span>DONE</span>
       <small id="coach-stat-done-p">0%</small>
     </div>
-
     <div class="coaching-status-card st-total" onclick="resetCoachingScope()">
       <strong id="coach-stat-total">0</strong>
       <span>TOTAL</span>
@@ -63,24 +86,24 @@
     <div class="card-mewah p-0 overflow-hidden">
       <div class="table-card-head">
         <div>
-          <span class="eyebrow">Region</span>
-          <h3>Ringkasan Region</h3>
+          <span class="eyebrow">Cabang</span>
+          <h3>Ringkasan Cabang</h3>
         </div>
       </div>
-      <div id="coaching-region-list" class="coaching-list-box">
-        <div class="empty-state">Memuat region...</div>
+      <div id="coaching-branch-list" class="coaching-list-box">
+        <div class="empty-state">Pilih region untuk menampilkan cabang.</div>
       </div>
     </div>
 
     <div class="card-mewah p-0 overflow-hidden">
       <div class="table-card-head">
         <div>
-          <span class="eyebrow">Cabang</span>
-          <h3>Ringkasan Cabang</h3>
+          <span class="eyebrow">Jabatan</span>
+          <h3>Ringkasan Jabatan</h3>
         </div>
       </div>
-      <div id="coaching-branch-list" class="coaching-list-box">
-        <div class="empty-state">Memuat cabang...</div>
+      <div id="coaching-job-list" class="coaching-list-box">
+        <div class="empty-state">Pilih region untuk menampilkan jabatan.</div>
       </div>
     </div>
   </div>
@@ -90,6 +113,11 @@
       <div>
         <b>Detail Data Coaching</b>
         <small id="coaching-table-subtitle">Klik baris staff untuk mengisi form coaching.</small>
+      </div>
+      <div class="coaching-toolbar-actions">
+        <button type="button" class="btn btn-sm btn-coaching-quick" onclick="startNewCoachingInput()">
+          <i class="bi bi-plus-circle me-1"></i>Input Coaching Baru
+        </button>
       </div>
       <input
         type="text"
@@ -122,7 +150,7 @@
     </div>
   </div>
 
-  <div class="card-mewah coaching-form-card mt-3">
+  <div id="coaching-form-section" class="card-mewah coaching-form-card mt-3">
     <div class="card-title-row">
       <div>
         <span class="eyebrow">Form Input</span>
@@ -132,26 +160,32 @@
     </div>
 
     <input type="hidden" id="c-parent-id">
+    <input type="hidden" id="c-row-mode" value="new">
 
     <div class="form-grid">
-      <div class="form-group span-2">
+      <div class="form-group">
+        <label class="form-label-lite">NIK / NPK</label>
+        <input type="text" id="c-nik" class="form-control" placeholder="NIK / NPK staff">
+      </div>
+
+      <div class="form-group">
         <label class="form-label-lite">Nama Staff</label>
         <input type="text" id="c-staff" class="form-control" placeholder="Pilih dari tabel atau isi manual">
       </div>
 
       <div class="form-group">
+        <label class="form-label-lite">Jabatan</label>
+        <input type="text" id="c-jabatan" class="form-control" placeholder="Jabatan">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label-lite">BM / RH</label>
+        <input type="text" id="c-bm" class="form-control" placeholder="Auto dari cabang (tetap bisa diedit)">
+      </div>
+
+      <div class="form-group">
         <label class="form-label-lite">Cabang</label>
         <input type="text" id="c-cabang" class="form-control" placeholder="Cabang">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label-lite">Last Performance</label>
-        <input type="text" id="c-perf" class="form-control" placeholder="Contoh: Ach 65%">
-      </div>
-
-      <div class="form-group">
-        <label class="form-label-lite">BM</label>
-        <input type="text" id="c-bm" class="form-control" placeholder="Nama BM">
       </div>
 
       <div class="form-group">
@@ -161,7 +195,7 @@
 
       <div class="form-group span-2">
         <label class="form-label-lite">Root Cause</label>
-        <textarea id="c-root" class="form-control" rows="4" placeholder="Tuliskan akar masalah yang perlu ditindaklanjuti"></textarea>
+        <textarea id="c-root" class="form-control" rows="3" placeholder="Tuliskan akar masalah yang perlu ditindaklanjuti"></textarea>
       </div>
 
       <div class="form-group span-2">
@@ -171,7 +205,35 @@
 
       <div class="form-group span-2">
         <label class="form-label-lite">Target / Action Plan</label>
-        <textarea id="c-target" class="form-control" rows="4" placeholder="Target perbaikan, komitmen, dan rencana tindak lanjut"></textarea>
+        <textarea id="c-target" class="form-control" rows="3" placeholder="Target perbaikan, komitmen, dan rencana tindak lanjut"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label-lite">Satuan Target</label>
+        <select id="c-satuan" class="form-select">
+          <option value="">Pilih satuan target</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label-lite">Target Date</label>
+        <input type="date" id="c-target-date" class="form-control">
+      </div>
+
+      <div class="form-group span-2">
+        <label class="form-label-lite">How (it Will Be Done)</label>
+        <textarea id="c-how" class="form-control" rows="3" placeholder="Bagaimana target akan dicapai"></textarea>
+      </div>
+
+      <div id="coaching-followup-fields" class="span-2" style="display:none;">
+        <div class="form-group span-2">
+          <label class="form-label-lite">Result</label>
+          <textarea id="c-result" class="form-control" rows="3" placeholder="Hasil eksekusi coaching sebelumnya"></textarea>
+        </div>
+        <div class="form-group span-2">
+          <label class="form-label-lite">Feedback</label>
+          <textarea id="c-feedback" class="form-control" rows="3" placeholder="Feedback untuk perbaikan berikutnya"></textarea>
+        </div>
       </div>
 
       <button class="btn btn-coaching span-2" onclick="saveCoachingInteractive()">
